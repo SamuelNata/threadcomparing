@@ -116,6 +116,34 @@ void readMatrix( std::string fileName , int & numL, int & numC, int **& matrix )
     return;
 }
 
+void alocateResultMatrix(int l1, int c1, int l2, int c2, int **& mr, int & lr, int & cr){
+	if(mr!=0){
+		for( int i(0) ; i<cr ; i++ ){
+			delete [] mr[i];
+		}
+		delete mr;
+	}
+
+	mr = new int*[c1];
+	for(int i(0) ; i<c1 ; i++){
+		mr[i] = new int[l2];
+	}
+	return;
+}
+
+void vectorMultiply(int m1 **&, int l1, int c1, int m2 **&, int l2, int c2, int mr **&, int taragetLine, int targetColum, int numThreads){
+	int atualL = targedLine;
+	int atualC = targetColum;
+	while(atualL<l1 && atualC<c2){
+		for( int k(0) ; k<l1 ; ){
+			mr[atualL][atualC] += m1[atualL][k]*m2[k][atualc];
+		}
+		atualL += (atualC+numThreads)/c2;
+		atualC = (atualC+numThreads)%c2;
+	}
+	return;
+}
+
 void printMatrix(int **& matrix, int numL, int numC ){
     std::cout << "Matriz " << numL << " por " << numC << ":\n";
     for( int i(0) ; i<numL ; i++ ){
