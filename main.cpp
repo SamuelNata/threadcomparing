@@ -13,8 +13,9 @@
 #define TESTCASEFOLDER "Matrizes/"
 #define RESULTMATRIXFOLDER "resultMatrix/"
 #define SOLUTIONTIMEFOLDER "solutionTimes/"
-#define READINGFILETIME "readingFileTime/"
-#define PRINTINGMATRIXTIME "printingMatrixTime/"
+#define READINGFILETIMEFOLDER "readingFileTime/"
+#define PRINTINGMATRIXTIMEFOLDER "printingMatrixTime/"
+#define ALLTIMES "allTimes.dat"
 
 std::vector<std::string> filesA = { "A4x4.txt", "A8x8.txt", "A16x16.txt", "A32x32.txt", "A64x64.txt", "A128x128.txt", "A256x256.txt", "A512x512.txt", "A1024x1024.txt", "A2048x2048.txt"};
 std::vector<std::string> filesB = { "B4x4.txt", "B8x8.txt", "B16x16.txt", "B32x32.txt", "B64x64.txt", "B128x128.txt", "B256x256.txt", "B512x512.txt", "B1024x1024.txt", "B2048x2048.txt"};
@@ -25,6 +26,28 @@ int pow(int b, int e){
 		r*=b;
 	}
 	return r;
+}
+
+void clearAllTimesFiles(){
+	std::string filename;
+	std::ofstream file;
+	for( int c(0) ; c<3 ; c++ ){
+		switch(c){
+			case(0):
+				filename = SOLUTIONTIMEFOLDER;
+				break;
+			case(1):
+				filename = READINGFILETIMEFOLDER;
+				break;
+			case(2):
+				filename = PRINTINGMATRIXTIMEFOLDER;
+				break;
+		}
+		file.open((filename+ALLTIMES).c_str());
+		file << "\n";
+		file.close();
+	}
+	return;
 }
 
 void vectorMultiply(int **& m1, int l1, int c1, int **& m2, int l2, int c2, int **& mr, int targetLine, int numThreads);
@@ -183,31 +206,43 @@ void printToBanchMarkSolutionTimeFile( std::string file1, std::string file2, dou
 	std::string folder = SOLUTIONTIMEFOLDER;
 	std::string name = folder+file1.substr(0, file1.find("."))+"_"+file2.substr(0, file2.find("."))+"_SolutionTimes.dat";
 	std::ofstream outFile;
+	//std::ofstream allTimesFile;
 	outFile.open( name.c_str() );
+	//allTimesFile.open( (std::string(SOLUTIONTIMEFOLDER)+ALLTIMES).c_str(), std::ios_base::app );
 	for( int i(0) ; i<12 ; i++ ){
 		if(solutionTimes[i]<0){	break; }
-		outFile << (pow(2,i)) << " " << solutionTimes[i] << "\n";
+		outFile << (pow(2,i)) << "\t" << solutionTimes[i] << "\n";
+		//allTimesFile << (pow(2,i)) << "\t" << solutionTimes[i] << "\n";
+
 	}
 	outFile.close();
 	return;
 }
 
 void printToBenchMarkReadFile(std::string file1, std::string file2, double ReadTime ){
-	std::string folder = READINGFILETIME;
+	std::string folder = READINGFILETIMEFOLDER;
 	std::string name = folder+file1.substr(0, file1.find("."))+"_"+file2.substr(0, file2.find("."))+"_ReadTime.dat";
 	std::ofstream outFile;
+	std::ofstream allTimesFile;
 	outFile.open( name.c_str() );
+	allTimesFile.open( (std::string(READINGFILETIMEFOLDER)+ALLTIMES).c_str(), std::ios_base::app );
 	outFile << ReadTime << "\n";
+	allTimesFile << ReadTime << "\n";
 	outFile.close();
+	allTimesFile.close();
 	return;
 }
 
 void printToBenchMarkPrintTimeFile(std::string file1, std::string file2, double printTime ){
-	std::string folder = PRINTINGMATRIXTIME;
+	std::string folder = PRINTINGMATRIXTIMEFOLDER;
 	std::string name = folder+file1.substr(0, file1.find("."))+"_"+file2.substr(0, file2.find("."))+"_PrintTime.dat";
 	std::ofstream outFile;
+	std::ofstream allTimesFile;
 	outFile.open( name.c_str() );
+	allTimesFile.open( (std::string(PRINTINGMATRIXTIMEFOLDER)+ALLTIMES).c_str(), std::ios_base::app );
 	outFile << printTime << "\n";
+	allTimesFile << printTime << "\n";
+	allTimesFile.close();
 	outFile.close();
 	return;
 }
@@ -286,14 +321,17 @@ int main()
 	    return 0;
 	}
 	else{
+		clearAllTimesFiles(); // LIMPA OS ARQUIVOS QUE GUARDAM O TEMPO PARA TODAS AS EXECUÇÕES EM CADA MODALIDADE (LEITURA, SOLUÇÃO E ESCRITA)
 		for( int f(0) ; f<10 ; f++ ){
 			//LENDO ARQUIVOS
+			std::cout << "---------------------------------------\n";
+			std::cout << "Multiplicando " << filesA[f] << " por " << filesB[f] << " (" << f << " de 10)\n";
 			std::cout << "readFiles\n";
 	    	readBeginTime = std::chrono::high_resolution_clock::now();
 	    	readMatrix((filesA[f]).c_str(), l1, c1, mat1);
 	    	readMatrix((filesB[f]).c_str(), l2, c2, mat2);
 	    	readFilesDuration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now()-readBeginTime);
-	    	//BENCHMARK
+	    	//SALVANDO BENCHMARK DE LEITURA
 	    	printToBenchMarkReadFile(filesA[f], filesB[f], readFilesDuration.count());
 	    	alocateResultMatrix(l1, c1, l2, c2, matR, lr, cr);
 
@@ -306,7 +344,7 @@ int main()
 	    	solutionDuration[0] = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now()-sequentialBeginTime);
 	    	solutionTime[0] = solutionDuration[0].count();
 
-	    	std::cout << "concurrentSolution : 0 a 2^i threads, com i = ";
+	    	std::cout << "concurrentSolution: 2^i threads, com i = ";
 			for( int i=1 ; i<=f+2 ; i++ ){
 				alocateResultMatrix(l1, c1, l2, c2, matR, lr, cr);
 				std::cout << i << ", ";
@@ -317,7 +355,7 @@ int main()
 	    		solutionTime[i] = solutionDuration[i].count();
 	    	}
 	    	std::cout << std::endl;
-	    	//BECHMARK
+	    	//SALVANDO BENCHMARK DE SOLUÇÃO
 	    	printToBanchMarkSolutionTimeFile(filesA[f], filesB[f], solutionTime);
 
 	    	std::cout << "printing time\n";
@@ -325,6 +363,7 @@ int main()
 	    	printingBeginTime = std::chrono::high_resolution_clock::now();
 	    	printResultMatrixToFile(filesA[f], filesB[f], matR,lr, cr);
 	    	printingDuration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now()-printingBeginTime);    	
+	    	//SALVANDO BENCHMARK DE ESCRITA
 	    	printToBenchMarkPrintTimeFile(filesA[f], filesB[f], printingDuration.count());
 	    }
 		return 0;
