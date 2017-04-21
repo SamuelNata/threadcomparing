@@ -17,8 +17,19 @@
 #define PRINTINGMATRIXTIMEFOLDER "printingMatrixTime/"
 #define ALLTIMES "allTimes.dat"
 
-std::vector<std::string> filesA = { "A4x4.txt", "A8x8.txt", "A16x16.txt", "A32x32.txt", "A64x64.txt", "A128x128.txt", "A256x256.txt", "A512x512.txt", "A1024x1024.txt", "A2048x2048.txt"};
-std::vector<std::string> filesB = { "B4x4.txt", "B8x8.txt", "B16x16.txt", "B32x32.txt", "B64x64.txt", "B128x128.txt", "B256x256.txt", "B512x512.txt", "B1024x1024.txt", "B2048x2048.txt"};
+char filesA[10][15] = { "A4x4.txt", "A8x8.txt", "A16x16.txt", "A32x32.txt", "A64x64.txt", "A128x128.txt", "A256x256.txt", "A512x512.txt", "A1024x1024.txt", "A2048x2048.txt"};
+char filesB[10][15] = { "B4x4.txt", "B8x8.txt", "B16x16.txt", "B32x32.txt", "B64x64.txt", "B128x128.txt", "B256x256.txt", "B512x512.txt", "B1024x1024.txt", "B2048x2048.txt"};
+
+double sizePerNumThreadsTime[12][10];
+
+void initializeTimeTable(){
+	for( int expNumThre(0) ; expNumThre<12 ; expNumThre++ ){
+		for( int N(0) ; N<10 ; N++ ){
+			sizePerNumThreadsTime[expNumThre][N] = -1;
+		}
+	}
+	return;
+}
 
 int pow(int b, int e){
 	int r=1;
@@ -219,6 +230,21 @@ void printToBanchMarkSolutionTimeFile( std::string file1, std::string file2, dou
 	return;
 }
 
+void printTableSolutionTimeFile(){
+	std::string folder = SOLUTIONTIMEFOLDER;
+	std::ofstream allTimesFile;
+	allTimesFile.open( (std::string(SOLUTIONTIMEFOLDER)+ALLTIMES).c_str(), std::ios_base::app );
+
+	for( int expNumThre(0) ; expNumThre<12 ; expNumThre++ ){
+		for( int N(0) ; N<10 ; N++ ){
+			allTimesFile << sizePerNumThreadsTime[expNumThre][N] << "\t";
+		}
+		allTimesFile << std::endl;
+	}
+	allTimesFile.close();
+	return;
+}
+
 void printToBenchMarkReadFile(std::string file1, std::string file2, double ReadTime ){
 	std::string folder = READINGFILETIMEFOLDER;
 	std::string name = folder+file1.substr(0, file1.find("."))+"_"+file2.substr(0, file2.find("."))+"_ReadTime.dat";
@@ -322,14 +348,15 @@ int main()
 	}
 	else{
 		clearAllTimesFiles(); // LIMPA OS ARQUIVOS QUE GUARDAM O TEMPO PARA TODAS AS EXECU합ES EM CADA MODALIDADE (LEITURA, SOLU플O E ESCRITA)
+		initializeTimeTable(); // INICIALIZA A TABELA DE TEMPOS QUE SER� IMPRESSA EM ARQUIVO NO FINAL
 		for( int f(0) ; f<10 ; f++ ){
 			//LENDO ARQUIVOS
 			std::cout << "---------------------------------------\n";
 			std::cout << "Multiplicando " << filesA[f] << " por " << filesB[f] << " (" << f << " de 10)\n";
 			std::cout << "readFiles\n";
 	    	readBeginTime = std::chrono::high_resolution_clock::now();
-	    	readMatrix((filesA[f]).c_str(), l1, c1, mat1);
-	    	readMatrix((filesB[f]).c_str(), l2, c2, mat2);
+	    	readMatrix(filesA[f], l1, c1, mat1);
+	    	readMatrix(filesB[f], l2, c2, mat2);
 	    	readFilesDuration = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now()-readBeginTime);
 	    	//SALVANDO BENCHMARK DE LEITURA
 	    	printToBenchMarkReadFile(filesA[f], filesB[f], readFilesDuration.count());
@@ -343,6 +370,7 @@ int main()
 	    	multiplySequentialy(mat1, l1, c1, mat2, l2, c2, matR, lr, cr);
 	    	solutionDuration[0] = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now()-sequentialBeginTime);
 	    	solutionTime[0] = solutionDuration[0].count();
+	    	sizePerNumThreadsTime[0][f] = solutionDuration[0].count();
 
 	    	std::cout << "concurrentSolution: 2^i threads, com i = ";
 			for( int i=1 ; i<=f+2 ; i++ ){
@@ -353,6 +381,7 @@ int main()
 	    		multiplyConcurrently(mat1, l1, c1, mat2, l2, c2, matR, lr, cr, pow(2,i));
 	    		solutionDuration[i] = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now()-concurrentBeginTime);
 	    		solutionTime[i] = solutionDuration[i].count();
+	    		sizePerNumThreadsTime[i][f] = solutionDuration[i].count();
 	    	}
 	    	std::cout << std::endl;
 	    	//SALVANDO BENCHMARK DE SOLU플O
@@ -366,6 +395,7 @@ int main()
 	    	//SALVANDO BENCHMARK DE ESCRITA
 	    	printToBenchMarkPrintTimeFile(filesA[f], filesB[f], printingDuration.count());
 	    }
+	    printTableSolutionTimeFile();
 		return 0;
 	}
 	return 0;
