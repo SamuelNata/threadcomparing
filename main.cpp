@@ -7,7 +7,6 @@
 #include <ratio>
 #include <chrono>
 #include <thread>
-#include <vector>
 
 #define AUTORUN true
 #define TESTCASEFOLDER "Matrizes/"
